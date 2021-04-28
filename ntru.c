@@ -9,32 +9,24 @@
 int main(){
 
 	Poly *a = poly_init();
-	a->coeff = malloc(4 * sizeof(int));
-	a->coeff[0] = 4;
-	a->coeff[1] = -6;
+	a->coeff = malloc(3 * sizeof(double));
+	a->coeff[0] = -2;
+	a->coeff[1] = 4;
 	a->coeff[2] = 3;
-	a->coeff[3] = 2;
-	a->size = 4;
+	a->size = 3;
 
-	// poly_println(a);
 
 	Poly *b = poly_init();
-	b->coeff = malloc(3 * sizeof(int));
-	b->coeff[0] = -2;
-	b->coeff[1] = 3;
-	b->coeff[2] = 1;
-	b->size = 3;
+	b->coeff = malloc(2 * sizeof(double));
+	b->coeff[0] = 1;
+	b->coeff[1] = 2;
+	b->size = 2;
+
 	
-	// poly_println(b);
+	Poly *result = poly_init();
+	poly_mdc(a, b, result);
 
-	Poly *quotient = poly_init();
-	Poly *remainder = poly_init();
-	poly_div(a, b, quotient);
-	poly_mod(a, b, remainder);
-
-	printf("\n");
-	poly_println(quotient);
-	poly_println(remainder);
+	poly_println(result);
 
 	return 0;
 }

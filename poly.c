@@ -15,7 +15,7 @@ Poly* poly_init(){
 void poly_print(Poly *a){
 	for (int i = 0; i < a->size; ++i){
 		if(a->coeff[i] != 0){
-			printf("%ix^%i ", a->coeff[i], i);
+			printf("%lfx^%i ", a->coeff[i], i);
 		}
 	}
 }
@@ -23,7 +23,7 @@ void poly_print(Poly *a){
 void poly_println(Poly *a){
 	for (int i = 0; i < a->size; ++i){
 		if(a->coeff[i] != 0){
-			printf("%ix^%i ", a->coeff[i], i);
+			printf("%lfx^%i ", a->coeff[i], i);
 		}
 	}
 
@@ -32,16 +32,16 @@ void poly_println(Poly *a){
 
 void poly_copy(Poly *a, Poly *b){
 
-	a->coeff = malloc(b->size * sizeof(int));
+	a->coeff = malloc(b->size * sizeof(double));
 	a->size  = b->size;
 
-	memcpy(a->coeff, b->coeff, b->size * sizeof(int));
+	memcpy(a->coeff, b->coeff, b->size * sizeof(double));
 }
 
 void poly_tern_generating(int n, int d1, int d2, Poly *result){
 	srand(time(NULL));
 
-	result->coeff = calloc(n, sizeof(int));
+	result->coeff = calloc(n, sizeof(double));
 	result->size = n;
 
 	for(int i = 0; i < d1;){
@@ -122,7 +122,7 @@ void poly_mul(Poly *aa, Poly *bb, Poly *result){
 	poly_copy(a, aa);
 	poly_copy(b, bb);
 
-	result->coeff = calloc(a->size + b->size, sizeof(int));
+	result->coeff = calloc(a->size + b->size, sizeof(double));
 	result->size  = a->size + b->size;
 
 	for (int i = 0; i < a->size; i++){
@@ -134,10 +134,23 @@ void poly_mul(Poly *aa, Poly *bb, Poly *result){
 	poly_rem_null_terms(result);
 }
 
+void poly_mul_int(Poly *aa, int multiplier, Poly *result){
+
+	Poly *a = poly_init();
+	poly_copy(a, aa);
+
+	if(multiplier != 0 && a->size != 0){
+		for (int i = 0; i < a->size; i++){
+			a->coeff[i] *= multiplier;
+		}
+
+	}
+}
+
 void poly_rem_null_terms(Poly *a){
 	for (int i = a->size - 1; i >= 0; i--){
 		if(a->coeff[i] == 0){
-			a->coeff = realloc(a->coeff, --a->size * sizeof(int));
+			a->coeff = realloc(a->coeff, --a->size * sizeof(double));
 		}else {
 			break;
 		}
@@ -154,11 +167,11 @@ void poly_div(Poly *aa, Poly *bb, Poly *quotient){
 		poly_copy(remainder, aa);
 		poly_copy(b, bb);
 
-		while(remainder->size != 0 && remainder->size >= b->size){
+		while(remainder->size >= b->size){
 			
 			Poly *temp = poly_init();
-			temp->coeff = calloc(((remainder->size - b->size) + 1), sizeof(int));
-			temp->coeff[remainder->size - b->size] = remainder->coeff[remainder->size - 1] * b->coeff[b->size - 1];
+			temp->coeff = calloc(((remainder->size - b->size) + 1), sizeof(double));
+			temp->coeff[remainder->size - b->size] = (double)remainder->coeff[remainder->size - 1] / (double)b->coeff[b->size - 1];
 			temp->size = (remainder->size - b->size) + 1;
 			
 			poly_sum(quotient, temp, quotient);
@@ -180,6 +193,7 @@ void poly_div(Poly *aa, Poly *bb, Poly *quotient){
 }
 
 void poly_mod(Poly *aa, Poly *bb, Poly *remainder){
+	
 	if(bb->size > 0){
 		Poly *quotient = poly_init();
 
@@ -192,8 +206,8 @@ void poly_mod(Poly *aa, Poly *bb, Poly *remainder){
 		while(remainder->size != 0 && remainder->size >= b->size){
 			
 			Poly *temp = poly_init();
-			temp->coeff = calloc(((remainder->size - b->size) + 1), sizeof(int));
-			temp->coeff[remainder->size - b->size] = remainder->coeff[remainder->size - 1] * b->coeff[b->size - 1];
+			temp->coeff = calloc(((remainder->size - b->size) + 1), sizeof(double));
+			temp->coeff[remainder->size - b->size] = remainder->coeff[remainder->size - 1] / b->coeff[b->size - 1];
 			temp->size = (remainder->size - b->size) + 1;
 			
 			poly_sum(quotient, temp, quotient);
@@ -212,4 +226,35 @@ void poly_mod(Poly *aa, Poly *bb, Poly *remainder){
 		printf("Error: division by zero.\n");
 
 	}
+}
+
+void poly_gdc(Poly *aa, Poly *bb, Poly *result){
+
+
+	Poly *a = poly_init();
+	Poly *b = poly_init();
+
+	poly_copy(a, aa);
+	poly_copy(b, bb);
+	
+	if(b->size == 0){
+		Poly *temp = poly_init();
+		temp->coeff = malloc(sizeof(double));
+		temp->coeff[0] = a->coeff[a->size - 1];
+		temp->size = 1;
+
+		poly_div(a, temp, result);
+
+	}else {
+
+		Poly *rem = poly_init();
+		poly_mod(a, b, rem);
+
+		poly_mdc(b, rem, result);
+		
+	}
+}
+
+void poly_gdce(Poly *aa, Poly *bb, Poly *result){
+
 }
