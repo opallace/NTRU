@@ -97,22 +97,8 @@ void poly_sub(Poly *aa, Poly *bb, Poly *result){
 	poly_copy(a, aa);
 	poly_copy(b, bb);
 
-	if(a->size >= b->size){
-		poly_copy(result, a);
-
-		for (int i = 0; i < b->size; ++i){
-			result->coeff[i] -= b->coeff[i];
-		}
-
-	}else {
-		poly_copy(result, b);
-
-		for (int i = 0; i < a->size; ++i){
-			result->coeff[i] = a->coeff[i] - b->coeff[i];
-		}
-	}
-
-	poly_rem_null_terms(result);
+	poly_mul_int(b, -1, b);
+	poly_sum(a, b, result);
 }
 
 void poly_mul(Poly *aa, Poly *bb, Poly *result){
@@ -134,17 +120,18 @@ void poly_mul(Poly *aa, Poly *bb, Poly *result){
 	poly_rem_null_terms(result);
 }
 
-void poly_mul_int(Poly *aa, int multiplier, Poly *result){
+void poly_mul_int(Poly *aa, double multiplier, Poly *result){
 
 	Poly *a = poly_init();
 	poly_copy(a, aa);
 
-	if(multiplier != 0 && a->size != 0){
+	if(multiplier != 0.0 && a->size != 0){
 		for (int i = 0; i < a->size; i++){
 			a->coeff[i] *= multiplier;
 		}
-
 	}
+
+	poly_copy(result, a);
 }
 
 void poly_rem_null_terms(Poly *a){
@@ -230,7 +217,6 @@ void poly_mod(Poly *aa, Poly *bb, Poly *remainder){
 
 void poly_gdc(Poly *aa, Poly *bb, Poly *result){
 
-
 	Poly *a = poly_init();
 	Poly *b = poly_init();
 
@@ -250,11 +236,52 @@ void poly_gdc(Poly *aa, Poly *bb, Poly *result){
 		Poly *rem = poly_init();
 		poly_mod(a, b, rem);
 
-		poly_mdc(b, rem, result);
+		poly_gdc(b, rem, result);
 		
 	}
 }
 
-void poly_gdce(Poly *aa, Poly *bb, Poly *result){
+void poly_gdce(Poly *a, Poly *b, Poly *result){
 
+    Poly *r     = poly_init();
+    Poly *new_r = poly_init();
+
+    Poly *t     = poly_init();
+    Poly *new_t = poly_init();
+   
+    poly_copy(new_r, a);
+    poly_copy(r, b);
+   
+    t->coeff = malloc(sizeof(double));
+    t->size  = 1;
+    t->coeff[0] = 0;
+
+    new_t->coeff = malloc(sizeof(double));
+    new_t->size  = 1;
+    new_t->coeff[0] = 1;
+   
+    while(new_r->size != 0){
+        Poly *quo = poly_init();
+        poly_div(r, new_r, quo);
+       
+        Poly *mul = poly_init();
+        Poly *sub = poly_init();
+
+        Poly *temp_new_r = poly_init();
+        poly_copy(temp_new_r, new_r);
+
+        poly_mul(quo, new_r, mul);
+        poly_sub(r, mul, new_r);
+        poly_copy(r, temp_new_r);
+
+        Poly *temp_new_t = poly_init();
+        poly_copy(temp_new_t, new_t);
+
+        poly_mul(quo, new_t, mul);
+        poly_sub(t, mul, new_t);
+        poly_copy(t, temp_new_t);
+    }
+   
+    poly_println(r);
+    poly_println(t);
 }
