@@ -146,6 +146,8 @@ void poly_tern_generating(int n, int d1, int d2, Poly *result){
 }
 
 void poly_sum(Poly *aa, Poly *bb, int modulus, Poly *result){
+	
+	Poly *temp_result = poly_init();
 	Poly *a = poly_init();
 	Poly *b = poly_init();
 
@@ -155,18 +157,19 @@ void poly_sum(Poly *aa, Poly *bb, int modulus, Poly *result){
 	poly_to_Zq(a, modulus);
 	poly_to_Zq(b, modulus);
 
-	result->size = max(a->size, b->size);
-	result->coeff = calloc(result->size, sizeof(int));
+	temp_result->size = max(a->size, b->size);
+	temp_result->coeff = calloc(temp_result->size, sizeof(int));
 
-	poly_fill(a, result->size, 0);
-	poly_fill(b, result->size, 0);
+	poly_fill(a, temp_result->size, 0);
+	poly_fill(b, temp_result->size, 0);
 
-	for (int i = 0; i < result->size; i++){
-		result->coeff[i] = a->coeff[i] + b->coeff[i];
+	for (int i = 0; i < temp_result->size; i++){
+		temp_result->coeff[i] = a->coeff[i] + b->coeff[i];
 	}
 
-	poly_to_Zq(result, modulus);
-	poly_rem_null_terms(result);
+	poly_to_Zq(temp_result, modulus);
+	poly_rem_null_terms(temp_result);
+	poly_copy(result, temp_result);
 
 	poly_free(a);
 	poly_free(b);
@@ -266,7 +269,7 @@ int poly_degree(Poly *aa){
 	
 	poly_rem_null_terms(a);
 
-	int degree = a->size;
+	int degree = a->size - 1;
 
 	poly_free(a);
 	return degree;
@@ -499,16 +502,30 @@ int is_2_power(int n){
 }
 
 int poly_invert(Poly *aa, Poly *ring, int modulus, Poly *result){
+	Poly *gcd = poly_init();
 	Poly *a = poly_init();
 
 	poly_copy(a, aa);
 	poly_to_Zq(a, modulus);
 
 	if(is_prime(modulus)){
+
+		poly_gdc(a, ring, modulus, gcd);
+
+		if(poly_degree(gcd) != 0){
+			return 0;
+		}
+
 		poly_gdce(a, ring, modulus, result);
 		return 1;
 	
 	}else if(is_2_power(modulus)){
+
+		poly_gdc(a, ring, 2, gcd);
+
+		if(poly_degree(gcd) != 0){
+			return 0;
+		}
 
 		poly_gdce(a, ring, 2, result);
 

@@ -15,6 +15,7 @@ struct ntru{
 	int df;
 	int dg;
 
+	Poly *b;
 	Poly *h;
 	Poly *g;
 	Poly *f;
@@ -22,6 +23,7 @@ struct ntru{
 	Poly *f_q;
 
 	Poly *r;
+	
 };
 
 struct ntru* init_ctx(){
@@ -40,6 +42,19 @@ Poly* create_ring(int p){
 	return ring;
 }
 
+void poly_sim_transp(Poly *aa, int q, Poly *result){
+	Poly *a = poly_init();
+	poly_copy(a, aa);
+
+	for (int i = 0; i < a->size; i++){
+		if(a->coeff[i] > (int)(q / 2)){
+			a->coeff[i] -= q;
+		}
+	}
+
+	poly_copy(result, a);
+}
+
 int main(){
 
 	struct ntru *ctx = init_ctx();
@@ -49,6 +64,7 @@ int main(){
 	ctx->df = 247;
 	ctx->dg = 149;
 
+	ctx->b = poly_init();
 	ctx->h = poly_init();
 	ctx->g = poly_init();
 	ctx->f = poly_init();
@@ -57,11 +73,24 @@ int main(){
 
 	ctx->r = create_ring(ctx->n);
 
+	poly_tern_generating(ctx->n - 1, ctx->dg, ctx->dg, ctx->b);
 	poly_tern_generating(ctx->n - 1, ctx->dg, ctx->dg, ctx->g);
-	poly_tern_generating(ctx->n - 1, ctx->df + 1, ctx->df, ctx->f);
 
-	poly_invert(ctx->f, ctx->r, ctx->p, ctx->f_p);
-	poly_invert(ctx->f, ctx->r, ctx->q, ctx->f_q);
+	int f_valid = 0;
+	do{
+
+		poly_tern_generating(ctx->n - 1, ctx->df + 1, ctx->df, ctx->f);
+
+		int f_p_inverse;
+		int f_q_inverse;
+
+		f_p_inverse = poly_invert(ctx->f, ctx->r, ctx->p, ctx->f_p);
+		f_q_inverse = poly_invert(ctx->f, ctx->r, ctx->q, ctx->f_q);
+
+		f_valid = f_p_inverse && f_q_inverse;
+
+	}while(!f_valid);
+	
 
 	poly_mul(ctx->f_q, ctx->g, ctx->q, ctx->h);
 	poly_int_mul(ctx->h, ctx->p, ctx->q, ctx->h);
@@ -90,6 +119,48 @@ int main(){
 
 	printf("r(x) = ");
 	poly_println(ctx->r);
+
+	/*-----------------------encrypt----------------------*/
+
+	Poly *m = poly_init();
+	m->size = ctx->n;
+	m->coeff = calloc(m->size, sizeof(int));
+	m->coeff[0] = 0;
+	m->coeff[1] = -1;
+	m->coeff[2] = 1;
+	m->coeff[3] = 1;
+	m->coeff[4] = 0;
+	m->coeff[5] = -1;
+	m->coeff[6] = 1;
+	m->coeff[7] = 1;
+	m->coeff[m->size - 1] = -1;
+
+	printf("m(x) = ");
+	poly_println(m);
+
+	Poly *e = poly_init();
+
+	poly_mul(ctx->b, ctx->h, ctx->q, e);
+	poly_sum(e, m, ctx->q, e);
+	poly_mod(e, ctx->r, ctx->q, e);
+
+	printf("e(x) = ");
+	poly_println(e);
+
+
+	/*-----------------------decrypt----------------------*/
+
+	Poly *a = poly_init();
+	poly_mul(ctx->f, e, ctx->q, a);
+	poly_mod(a, ctx->r, ctx->q, a);
+	poly_sim_transp(a, ctx->q, a);
+
+	poly_mul(ctx->f_p, a, ctx->p, a);
+	poly_mod(a, ctx->r, ctx->p, a);
+	poly_sim_transp(a, ctx->p, a);
+
+	printf("a(x) = ");
+	poly_println(a);
 
 	return 0;
 }
