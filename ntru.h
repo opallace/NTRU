@@ -1,14 +1,13 @@
 #ifndef NTRU_H_INCLUDED
 #define NTRU_H_INCLUDED
 
-struct ntru{
+typedef struct{
 	int p;
 	int q;
 	int n;
 
 	int df;
 	int dg;
-	int db;
 
 	Poly *h;
 	Poly *g;
@@ -18,12 +17,13 @@ struct ntru{
 
 	Poly *r;
 	Poly *b;	
-};
+} Ntru;
 
-struct ntru* ntru_init_ctx(int p, int q, int n, int df, int dg, int db);
+Ntru* ntru_init();
+void ntru_params_set(int p, int q, int n, int df, int dg, Ntru *ntru);
 void ntru_gen_ring(int p, Poly *result);
-void ntru_gen_random_keys(struct ntru *ctx);
-void ntru_encrypt(struct ntru *ctx, Poly *msg, Poly *result);
-void ntru_decrypt(struct ntru *ctx, Poly *msg, Poly *result);
+void ntru_gen_random_keys(Ntru *ntru);
+void ntru_encrypt(Ntru *ntru, Poly *msg, Poly *result);
+void ntru_decrypt(Ntru *ntru, Poly *msg, Poly *result);
 
 #endif

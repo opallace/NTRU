@@ -105,12 +105,14 @@ int poly_is_zero(Poly *aa){
 	poly_rem_null_terms(a);
 
 	if(a->size == 1 && a->coeff[0] == 0){
+		poly_free(a);
 		return 1;
+	
 	}else {
+		poly_free(a);
 		return 0;
+	
 	}
-
-	poly_free(a);
 }
 
 int poly_degree(Poly *aa){
@@ -256,7 +258,6 @@ void poly_mul(Poly *aa, Poly *bb, int modulus, Poly *result){
 	result->coeff = calloc(a->size + b->size - 1, sizeof(int));
 	result->size  = a->size + b->size - 1;
 
-
 	for (int i = 0; i < a->size; i++){
 		for (int j = 0; j < b->size; j++){
 			result->coeff[i+j] += a->coeff[i] * b->coeff[j];
@@ -271,8 +272,9 @@ void poly_mul(Poly *aa, Poly *bb, int modulus, Poly *result){
 
 }
 
-void poly_div(Poly *aa, Poly *bb, int modulus, Poly *quotient){
+void poly_div(Poly *aa, Poly *bb, int modulus, Poly *result){
 	if(!poly_is_zero(bb)){
+		Poly *quotient = poly_init();
 		quotient->coeff = malloc(sizeof(int));
 		quotient->coeff[0] = 0;
 		quotient->size = 1;
@@ -307,7 +309,11 @@ void poly_div(Poly *aa, Poly *bb, int modulus, Poly *quotient){
 		}
 
 		poly_rem_null_terms(quotient);
+		poly_copy(result, quotient);
 
+		poly_free(quotient);
+		poly_free(remainder);
+		poly_free(b);
 
 	}else {
 		printf("Error: division by zero.\n");
@@ -340,17 +346,23 @@ void poly_mod(Poly *aa, Poly *bb, int modulus, Poly *result){
 			poly_sum(quotient, temp, modulus, quotient);
 
 			Poly *mul = poly_init();
-			Poly *sub = poly_init();
 
 			poly_mul(temp, divisor, modulus, mul);
 			poly_sub(remainder, mul, modulus, remainder);
 
 			poly_trunc(remainder, modulus);
 			poly_trunc(quotient, modulus);
+
+			poly_free(temp);
+			poly_free(mul);
 		}
 
 		poly_rem_null_terms(remainder);
 		poly_copy(result, remainder);
+
+		poly_free(quotient);
+		poly_free(remainder);
+		poly_free(divisor);
 
 	}else {
 		printf("Error: division by zero.\n");
@@ -427,7 +439,6 @@ void poly_gdce(Poly *a, Poly *b, int modulus, Poly *result){
         poly_div(r, new_r, modulus, quo);
         
         Poly *mul = poly_init();
-        Poly *sub = poly_init();
 
         Poly *temp_new_r = poly_init();
         poly_copy(temp_new_r, new_r);
@@ -443,48 +454,64 @@ void poly_gdce(Poly *a, Poly *b, int modulus, Poly *result){
         poly_mul(quo, new_t, modulus, mul);
         poly_sub(t, mul, modulus, new_t);
         poly_copy(t, temp_new_t);
+
+        poly_free(quo);
+        poly_free(mul);
+        poly_free(temp_new_r);
+        poly_free(temp_new_t);
     }
 
     poly_div(t, r, modulus, result);
+
+    poly_free(r);
+    poly_free(t);
+    poly_free(new_r);
+    poly_free(new_t);
 }
 
+int poly_is_invertible(Poly *aa, Poly *ring, int modulus){
+	Poly *gcd = poly_init();
+	Poly *a   = poly_init();
 
+	int is_invertible;
+
+	poly_copy(a, aa);
+
+	poly_gdc(a, ring, modulus, gcd);
+
+	if(poly_degree(gcd) == 0){
+		is_invertible = 1;
+	}else {
+		is_invertible = 0;
+	}
+
+	poly_free(gcd);
+    poly_free(a);
+
+    return is_invertible;
+}
 
 int poly_invert(Poly *aa, Poly *ring, int modulus, Poly *result){
-	Poly *gcd = poly_init();
 	Poly *a = poly_init();
 
 	poly_copy(a, aa);
 	poly_trunc(a, modulus);
 
-	if(is_prime(modulus)){
-
-		poly_gdc(a, ring, modulus, gcd);
-
-		if(poly_degree(gcd) != 0){
-			return 0;
-		}
+	if(is_prime(modulus) && poly_is_invertible(a, ring, modulus)){
 
 		poly_gdce(a, ring, modulus, result);
-		return 1;
-	
-	}else if(is_2_power(modulus)){
 
-		poly_gdc(a, ring, 2, gcd);
-
-		if(poly_degree(gcd) != 0){
-			return 0;
-		}
+	}else if(is_2_power(modulus) && poly_is_invertible(a, ring, 2)){
 
 		poly_gdce(a, ring, 2, result);
 
 		for (int i = 1; i < (int)log2(modulus); i++){
 			
 			Poly *mul1 = poly_init();
-			poly_int_mul(result, 2, modulus, mul1);//(2 * result)
+			poly_int_mul(result, 2, modulus, mul1);
 
 			Poly *pow = poly_init();
-			poly_mul(result, result, modulus, pow);//(result * result)
+			poly_mul(result, result, modulus, pow);
 
 			Poly *mul2 = poly_init();
 			poly_mul(a, pow, modulus, mul2);
@@ -492,9 +519,16 @@ int poly_invert(Poly *aa, Poly *ring, int modulus, Poly *result){
 			Poly *sub = poly_init();
 			poly_sub(mul1, mul2, modulus, sub);
 
-			Poly *mod = poly_init();
 			poly_mod(sub, ring, modulus, result);
-		}
 
+			poly_free(mul1);
+        	poly_free(pow);
+        	poly_free(mul2);
+        	poly_free(sub);
+		}
 	}
+
+    poly_free(a);
+
+    return 1;
 }

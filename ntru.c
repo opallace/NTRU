@@ -4,30 +4,30 @@
 #include "poly.h"
 #include "ntru.h"
 
-struct ntru* ntru_init_ctx(int p, int q, int n, int df, int dg, int db){
+Ntru* ntru_init(){
+	Ntru *ntru = malloc(sizeof(Ntru));
 
-	struct ntru *ctx = malloc(sizeof(struct ntru));
+	ntru->h = poly_init();
+	ntru->g = poly_init();
+	ntru->f = poly_init();
+	ntru->f_p = poly_init();
+	ntru->f_q = poly_init();
 
-	ctx->p = p;
-	ctx->q = q;
-	ctx->n = n;
-	ctx->df = df;
-	ctx->dg = dg;
-	ctx->db = db;
+	ntru->r = poly_init();
+	ntru->b = poly_init();
 
-	ctx->h = poly_init();
-	ctx->g = poly_init();
-	ctx->f = poly_init();
-	ctx->f_p = poly_init();
-	ctx->f_q = poly_init();
+	return ntru;
+}
 
-	ctx->r = poly_init();
-	ctx->b = poly_init();
+void ntru_params_set(int p, int q, int n, int df, int dg, Ntru *ntru){
+	ntru->p = p;
+	ntru->q = q;
+	ntru->n = n;
+	ntru->df = df;
+	ntru->dg = dg;
 
-	ntru_gen_ring(ctx->n, ctx->r);
-	poly_gen_tern(ctx->n - 1, ctx->db, ctx->db, ctx->b);
-
-	return ctx;
+	ntru_gen_ring(ntru->n, ntru->r);
+	poly_gen_tern(ntru->n - 1, ntru->df, ntru->df, ntru->b);
 }
 
 void ntru_gen_ring(int p, Poly *result){
@@ -40,54 +40,57 @@ void ntru_gen_ring(int p, Poly *result){
 	ring->coeff[p] = 1;
 
 	poly_copy(result, ring);
+	poly_free(ring);
 }
 
-void ntru_gen_random_keys(struct ntru *ctx){
-	poly_gen_tern(ctx->n - 1, ctx->dg, ctx->dg, ctx->g);
+void ntru_gen_random_keys(Ntru *ntru){
+	poly_gen_tern(ntru->n - 1, ntru->dg, ntru->dg, ntru->g);
 
 	int f_valid = 0;
 	do{
 
-		poly_gen_tern(ctx->n - 1, ctx->df + 1, ctx->df, ctx->f);
+		poly_gen_tern(ntru->n - 1, ntru->df + 1, ntru->df, ntru->f);
 
 		int f_p_inverse;
 		int f_q_inverse;
 
-		f_p_inverse = poly_invert(ctx->f, ctx->r, ctx->p, ctx->f_p);
-		f_q_inverse = poly_invert(ctx->f, ctx->r, ctx->q, ctx->f_q);
+		f_p_inverse = poly_invert(ntru->f, ntru->r, ntru->p, ntru->f_p);
+		f_q_inverse = poly_invert(ntru->f, ntru->r, ntru->q, ntru->f_q);
 
 		f_valid = f_p_inverse && f_q_inverse;
 
 	}while(!f_valid);
 	
 
-	poly_mul(ctx->f_q, ctx->g, ctx->q, ctx->h);
-	poly_int_mul(ctx->h, ctx->p, ctx->q, ctx->h);
-	poly_mod(ctx->h, ctx->r, ctx->q, ctx->h);
+	poly_mul(ntru->f_q, ntru->g, ntru->q, ntru->h);
+	poly_int_mul(ntru->h, ntru->p, ntru->q, ntru->h);
+	poly_mod(ntru->h, ntru->r, ntru->q, ntru->h);
 }
 
-void ntru_encrypt(struct ntru *ctx, Poly *msg, Poly *result){
-	Poly *e = poly_init();
+void ntru_encrypt(Ntru *ntru, Poly *msg, Poly *result){
+	Poly *enc = poly_init();
 
-	poly_mul(ctx->b, ctx->h, ctx->q, e);
-	poly_sum(e, msg, ctx->q, e);
-	poly_mod(e, ctx->r, ctx->q, e);
+	poly_mul(ntru->b, ntru->h, ntru->q, enc);
+	poly_sum(enc, msg, ntru->q, enc);
+	poly_mod(enc, ntru->r, ntru->q, enc);
 
-	poly_copy(result, e);
+	poly_copy(result, enc);
+	poly_free(enc);
 }
 
-void ntru_decrypt(struct ntru *ctx, Poly *msg, Poly *result){
-	Poly *a = poly_init();
+void ntru_decrypt(Ntru *ntru, Poly *msg, Poly *result){
+	Poly *dec = poly_init();
 
-	poly_mul(ctx->f, msg, ctx->q, a);
-	poly_mod(a, ctx->r, ctx->q, a);
-	poly_mod_center(a, ctx->q, a);
+	poly_mul(ntru->f, msg, ntru->q, dec);
+	poly_mod(dec, ntru->r, ntru->q, dec);
+	poly_mod_center(dec, ntru->q, dec);
 
-	poly_mul(ctx->f_p, a, ctx->p, a);
-	poly_mod(a, ctx->r, ctx->p, a);
-	poly_mod_center(a, ctx->p, a);
+	poly_mul(ntru->f_p, dec, ntru->p, dec);
+	poly_mod(dec, ntru->r, ntru->p, dec);
+	poly_mod_center(dec, ntru->p, dec);
 
-	poly_copy(result, a);
+	poly_copy(result, dec);
+	poly_free(dec);
 }
 
 

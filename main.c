@@ -10,45 +10,44 @@
 
 int main(){
 
-	/*-----------------------key generation----------------------*/
+	/*-----------------------init----------------------*/
 
-	struct ntru *ctx = ntru_init_ctx(3, 2048, 743, 247, 149, 149);
+	Ntru *ntru = ntru_init();
 
-	/*-----------------------key generation----------------------*/
-	
-	ntru_gen_random_keys(ctx);
+	ntru_params_set(3, 2048, 1171, 106, 390, ntru);
+	ntru_gen_random_keys(ntru);
 
-	printf("p = %i\n", ctx->p);
-	printf("q = %i\n", ctx->q);
-	printf("n = %i\n", ctx->n);
-	printf("df = %i\n", ctx->df);
-	printf("dg = %i\n\n", ctx->dg);
+	printf("p = %i\n", ntru->p);
+	printf("q = %i\n", ntru->q);
+	printf("n = %i\n", ntru->n);
+	printf("df = %i\n", ntru->df);
+	printf("dg = %i\n\n", ntru->dg);
 
 	printf("g(x) = ");
-	poly_println(ctx->g);
+	poly_println(ntru->g);
 
 	printf("f(x) = ");
-	poly_println(ctx->f);
+	poly_println(ntru->f);
 
 	printf("f_p(x) = ");
-	poly_println(ctx->f_p);
+	poly_println(ntru->f_p);
 
 	printf("f_q(x) = ");
-	poly_println(ctx->f_q);
+	poly_println(ntru->f_q);
 
 	printf("h(x) = ");
-	poly_println(ctx->h);
+	poly_println(ntru->h);
 
 	printf("r(x) = ");
-	poly_println(ctx->r);
+	poly_println(ntru->r);
 
 	printf("b(x) = ");
-	poly_println(ctx->b);
+	poly_println(ntru->b);
 
 	/*-----------------------encrypt----------------------*/
 
 	Poly *msg = poly_init();
-	msg->size = ctx->n;
+	msg->size = ntru->n;
 	msg->coeff = calloc(msg->size, sizeof(int));
 	msg->coeff[0] = 0;
 	msg->coeff[1] = -1;
@@ -64,7 +63,7 @@ int main(){
 	poly_println(msg);
 
 	Poly *enc = poly_init();
-	ntru_encrypt(ctx, msg, enc);
+	ntru_encrypt(ntru, msg, enc);
 
 	printf("enc(x) = ");
 	poly_println(enc);
@@ -73,7 +72,7 @@ int main(){
 	/*-----------------------decrypt----------------------*/
 
 	Poly *dec = poly_init();
-	ntru_decrypt(ctx, enc, dec);
+	ntru_decrypt(ntru, enc, dec);
 
 	printf("dec(x) = ");
 	poly_println(dec);

@@ -7,40 +7,39 @@ int max(int a, int b){
 	}
 }
 
-int mod(int a, int m){
-	int resto = a % m;
+int mod(int n, int modulus){
+	int remainder = n % modulus;
 	
-	if(resto < 0){
-		return resto + m;
+	if(remainder < 0){
+		return remainder + modulus;
 	
 	}else {
-		return resto;
+		return remainder;
 	} 
 }
 
-int ntruprime_inv_int(int a, int modulus){
-    int x = 0;
-    int lastx = 1;
-    int y = 1;
+int ntruprime_inv_int(int n, int modulus){
+    int new_t = 0;
+    int t = 1;
     int b = modulus;
 
     while (b != 0) {
-        int quotient = a / b;
+        int quotient = n / b;
 
-        int temp = a;
-        a = b;
+        int temp = n;
+        n = b;
         b = temp % b;
 
-        temp = x;
-        x = lastx - quotient*x;
-        lastx = temp;
+        temp = new_t;
+        new_t = t - quotient*new_t;
+        t = temp;
     }
 
-    if (lastx < 0){
-        lastx += modulus;
+    if (t < 0){
+        t += modulus;
     }
 
-    return lastx;
+    return t;
 }
 
 int is_prime(int n){
